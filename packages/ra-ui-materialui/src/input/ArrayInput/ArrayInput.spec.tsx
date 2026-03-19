@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {
     RecordContextProvider,
     ResourceContextProvider,
+    required,
     testDataProvider,
     useArrayInput,
 } from 'ra-core';
@@ -281,6 +282,56 @@ describe('<ArrayInput />', () => {
             </AdminContext>
         );
         expect(screen.queryByText('test helper text')).not.toBeNull();
+    });
+
+    it('should not display a root-level array error immediately when mounted in onChange mode', async () => {
+        const submit = jest.fn();
+
+        const FormWithConditionalArrayInput = () => {
+            const [showArrayInput, setShowArrayInput] = React.useState(false);
+
+            return (
+                <>
+                    <button
+                        onClick={() => setShowArrayInput(true)}
+                        type="button"
+                    >
+                        Show array input
+                    </button>
+                    {showArrayInput ? (
+                        <ArrayInput source="authors" validate={required()}>
+                            <SimpleFormIterator>
+                                <TextInput source="name" />
+                            </SimpleFormIterator>
+                        </ArrayInput>
+                    ) : null}
+                </>
+            );
+        };
+
+        render(
+            <AdminContext dataProvider={testDataProvider()}>
+                <ResourceContextProvider value="books">
+                    <SimpleForm mode="onChange" onSubmit={submit}>
+                        <FormWithConditionalArrayInput />
+                    </SimpleForm>
+                </ResourceContextProvider>
+            </AdminContext>
+        );
+
+        fireEvent.click(screen.getByText('Show array input'));
+
+        await screen.findByText('resources.books.fields.authors');
+        expect(screen.queryByText('ra.validation.required')).toBeNull();
+
+        fireEvent.click(await screen.findByLabelText('ra.action.add'));
+        fireEvent.click(await screen.findByLabelText('ra.action.remove'));
+
+        await screen.findByText('ra.validation.required');
+
+        fireEvent.click(screen.getByText('ra.action.save'));
+
+        await screen.findByText('ra.validation.required');
     });
 
     it('should update the form state to dirty, and allow submit, on updating an array input with default value', async () => {

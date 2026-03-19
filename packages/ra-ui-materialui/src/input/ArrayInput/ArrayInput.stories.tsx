@@ -14,7 +14,7 @@ import {
     TestMemoryRouter,
     useSourceContext,
 } from 'ra-core';
-import { Button, InputAdornment, Stack } from '@mui/material';
+import { Alert, Button, InputAdornment, Stack } from '@mui/material';
 
 import { Edit, Create } from '../../detail';
 import { SimpleForm, TabbedForm } from '../../form';
@@ -821,6 +821,47 @@ export const GlobalValidation = () => (
     <TestMemoryRouter initialEntries={['/books/1']}>
         <Admin dataProvider={dataProvider}>
             <Resource name="books" edit={BookEditGlobalValidation} />
+        </Admin>
+    </TestMemoryRouter>
+);
+
+const BookCreateConditionalValidation = () => {
+    const [showArrayInput, setShowArrayInput] = React.useState(false);
+
+    return (
+        <Create>
+            <SimpleForm mode="onChange">
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    Reproduccion del bug 2: mostrar el ArrayInput no debe
+                    pintarlo invalido automaticamente. El error debe aparecer
+                    recien despues de interaccion real o submit invalido.
+                </Alert>
+                <Button
+                    onClick={() => setShowArrayInput(true)}
+                    variant="outlined"
+                >
+                    Show array input
+                </Button>
+                {showArrayInput ? (
+                    <ArrayInput
+                        source="authors"
+                        fullWidth
+                        validate={required()}
+                    >
+                        <SimpleFormIterator>
+                            <TextInput source="name" />
+                        </SimpleFormIterator>
+                    </ArrayInput>
+                ) : null}
+            </SimpleForm>
+        </Create>
+    );
+};
+
+export const ConditionalMountOnChangeValidation = () => (
+    <TestMemoryRouter initialEntries={['/books/create']}>
+        <Admin dataProvider={dataProvider}>
+            <Resource name="books" create={BookCreateConditionalValidation} />
         </Admin>
     </TestMemoryRouter>
 );
