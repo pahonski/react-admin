@@ -91,11 +91,6 @@ export const useUpdateMany = <
         mutationFn: customMutationFn,
         ...mutationOptions
     } = options;
-    const wrappedCustomMutationFn = customMutationFn as
-        | ((
-              params: Partial<UseUpdateManyMutateParams<RecordType>>
-          ) => Promise<Array<RecordType['id']>>)
-        | undefined;
 
     const dataProviderUpdateMany = useEvent(
         (resource: string, params: UpdateManyParams<RecordType>) =>
@@ -112,9 +107,9 @@ export const useUpdateMany = <
             ...mutationOptions,
             mutationKey: [resource, 'updateMany', params],
             mutationMode,
-            mutationFn: wrappedCustomMutationFn
+            mutationFn: customMutationFn
                 ? async params => ({
-                      data: await wrappedCustomMutationFn(params),
+                      data: await customMutationFn(params),
                   })
                 : ({ resource, ...params }) => {
                       if (resource == null) {
@@ -245,9 +240,9 @@ export const useUpdateMany = <
                     // Immediately get the function with middlewares applied so that even if the middlewares gets unregistered (because of a redirect for instance),
                     // we still have them applied when users have called the mutate function.
                     const mutateWithMiddlewares = getMutateWithMiddlewares(
-                        wrappedCustomMutationFn
+                        customMutationFn
                             ? (resource, params) =>
-                                  wrappedCustomMutationFn({
+                                  customMutationFn({
                                       resource,
                                       ...params,
                                   } as Partial<
@@ -305,11 +300,17 @@ export interface UseUpdateManyMutateParams<RecordType extends RaRecord = any> {
 export type UseUpdateManyOptions<
     RecordType extends RaRecord = any,
     MutationError = unknown,
-> = UseMutationOptions<
-    Array<RecordType['id']>,
-    MutationError,
-    Partial<UseUpdateManyMutateParams<RecordType>>
+> = Omit<
+    UseMutationOptions<
+        Array<RecordType['id']>,
+        MutationError,
+        Partial<UseUpdateManyMutateParams<RecordType>>
+    >,
+    'mutationFn'
 > & {
+    mutationFn?: (
+        params: Partial<UseUpdateManyMutateParams<RecordType>>
+    ) => Promise<Array<RecordType['id']>>;
     mutationMode?: MutationMode;
     returnPromise?: boolean;
     getMutateWithMiddlewares?: <

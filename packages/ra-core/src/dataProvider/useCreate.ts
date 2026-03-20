@@ -97,11 +97,6 @@ export const useCreate = <
         onSettled,
         ...mutationOptions
     } = options;
-    const wrappedCustomMutationFn = customMutationFn as
-        | ((
-              params: Partial<UseCreateMutateParams<RecordType>>
-          ) => Promise<ResultRecordType>)
-        | undefined;
 
     const dataProviderCreate = useEvent((resource: string, params) =>
         dataProvider.create<RecordType, ResultRecordType>(
@@ -120,9 +115,9 @@ export const useCreate = <
             ...mutationOptions,
             mutationKey: [resource, 'create', params],
             mutationMode,
-            mutationFn: wrappedCustomMutationFn
+            mutationFn: customMutationFn
                 ? async params => ({
-                      data: await wrappedCustomMutationFn(params),
+                      data: await customMutationFn(params),
                   })
                 : ({ resource, ...params }) => {
                       if (resource == null) {
@@ -196,9 +191,9 @@ export const useCreate = <
                     // Immediately get the function with middlewares applied so that even if the middlewares gets unregistered (because of a redirect for instance),
                     // we still have them applied when users have called the mutate function.
                     const mutateWithMiddlewares = getMutateWithMiddlewares(
-                        wrappedCustomMutationFn
+                        customMutationFn
                             ? (resource, params) =>
-                                  wrappedCustomMutationFn({
+                                  customMutationFn({
                                       resource,
                                       ...params,
                                   } as Partial<
@@ -280,11 +275,17 @@ export type UseCreateOptions<
     RecordType extends Omit<RaRecord, 'id'> = any,
     MutationError = unknown,
     ResultRecordType extends RaRecord = RecordType & { id: Identifier },
-> = UseMutationOptions<
-    ResultRecordType,
-    MutationError,
-    Partial<UseCreateMutateParams<RecordType>>
+> = Omit<
+    UseMutationOptions<
+        ResultRecordType,
+        MutationError,
+        Partial<UseCreateMutateParams<RecordType>>
+    >,
+    'mutationFn'
 > & {
+    mutationFn?: (
+        params: Partial<UseCreateMutateParams<RecordType>>
+    ) => Promise<ResultRecordType>;
     mutationMode?: MutationMode;
     returnPromise?: boolean;
     getMutateWithMiddlewares?: <

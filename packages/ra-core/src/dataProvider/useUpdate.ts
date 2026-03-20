@@ -95,11 +95,6 @@ export const useUpdate = <RecordType extends RaRecord = any, ErrorType = Error>(
         mutationFn: customMutationFn,
         ...mutationOptions
     } = options;
-    const wrappedCustomMutationFn = customMutationFn as
-        | ((
-              params: Partial<UseUpdateMutateParams<RecordType>>
-          ) => Promise<RecordType>)
-        | undefined;
 
     const dataProviderUpdate = useEvent(
         (resource: string, params: UpdateParams<RecordType>) =>
@@ -116,9 +111,9 @@ export const useUpdate = <RecordType extends RaRecord = any, ErrorType = Error>(
             ...mutationOptions,
             mutationKey: [resource, 'update', params],
             mutationMode,
-            mutationFn: wrappedCustomMutationFn
+            mutationFn: customMutationFn
                 ? async params => ({
-                      data: await wrappedCustomMutationFn(params),
+                      data: await customMutationFn(params),
                   })
                 : ({ resource, ...params }) => {
                       if (resource == null) {
@@ -264,9 +259,9 @@ export const useUpdate = <RecordType extends RaRecord = any, ErrorType = Error>(
                     // Immediately get the function with middlewares applied so that even if the middlewares gets unregistered (because of a redirect for instance),
                     // we still have them applied when users have called the mutate function.
                     const mutateWithMiddlewares = getMutateWithMiddlewares(
-                        wrappedCustomMutationFn
+                        customMutationFn
                             ? (resource, params) =>
-                                  wrappedCustomMutationFn({
+                                  customMutationFn({
                                       resource,
                                       ...params,
                                   } as Partial<
@@ -325,11 +320,17 @@ export interface UseUpdateMutateParams<RecordType extends RaRecord = any> {
 export type UseUpdateOptions<
     RecordType extends RaRecord = any,
     ErrorType = Error,
-> = UseMutationOptions<
-    RecordType,
-    ErrorType,
-    Partial<UseUpdateMutateParams<RecordType>>
+> = Omit<
+    UseMutationOptions<
+        RecordType,
+        ErrorType,
+        Partial<UseUpdateMutateParams<RecordType>>
+    >,
+    'mutationFn'
 > & {
+    mutationFn?: (
+        params: Partial<UseUpdateMutateParams<RecordType>>
+    ) => Promise<RecordType>;
     mutationMode?: MutationMode;
     returnPromise?: boolean;
     getMutateWithMiddlewares?: <

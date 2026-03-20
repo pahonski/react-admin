@@ -96,11 +96,6 @@ export const useDelete = <
         onSettled,
         ...mutationOptions
     } = options;
-    const wrappedCustomMutationFn = customMutationFn as
-        | ((
-              params: Partial<UseDeleteMutateParams<RecordType>>
-          ) => Promise<RecordType>)
-        | undefined;
 
     const [mutate, mutationResult] = useMutationWithMutationMode<
         MutationError,
@@ -112,9 +107,9 @@ export const useDelete = <
             ...mutationOptions,
             mutationKey: [resource, 'delete', params],
             mutationMode,
-            mutationFn: wrappedCustomMutationFn
+            mutationFn: customMutationFn
                 ? async params => ({
-                      data: await wrappedCustomMutationFn(params),
+                      data: await customMutationFn(params),
                   })
                 : ({ resource, ...params }) => {
                       if (resource == null) {
@@ -289,11 +284,17 @@ export interface UseDeleteMutateParams<RecordType extends RaRecord = any> {
 export type UseDeleteOptions<
     RecordType extends RaRecord = any,
     MutationError = unknown,
-> = UseMutationOptions<
-    RecordType,
-    MutationError,
-    Partial<UseDeleteMutateParams<RecordType>>
+> = Omit<
+    UseMutationOptions<
+        RecordType,
+        MutationError,
+        Partial<UseDeleteMutateParams<RecordType>>
+    >,
+    'mutationFn'
 > & {
+    mutationFn?: (
+        params: Partial<UseDeleteMutateParams<RecordType>>
+    ) => Promise<RecordType>;
     mutationMode?: MutationMode;
     returnPromise?: boolean;
 };

@@ -96,11 +96,6 @@ export const useDeleteMany = <
         onSettled,
         ...mutationOptions
     } = options;
-    const wrappedCustomMutationFn = customMutationFn as
-        | ((
-              params: Partial<UseDeleteManyMutateParams<RecordType>>
-          ) => Promise<Array<RecordType['id']> | undefined>)
-        | undefined;
 
     const [mutate, mutationResult] = useMutationWithMutationMode<
         MutationError,
@@ -112,9 +107,9 @@ export const useDeleteMany = <
             ...mutationOptions,
             mutationKey: [resource, 'deleteMany', params],
             mutationMode,
-            mutationFn: wrappedCustomMutationFn
+            mutationFn: customMutationFn
                 ? async params => ({
-                      data: await wrappedCustomMutationFn(params),
+                      data: await customMutationFn(params),
                   })
                 : ({ resource, ...params }) => {
                       if (resource == null) {
@@ -313,11 +308,20 @@ export type UseDeleteManyOptions<
     RecordType extends RaRecord = any,
     MutationError = unknown,
     TReturnPromise extends boolean = boolean,
-> = UseMutationOptions<
-    Array<RecordType['id']> | undefined,
-    MutationError,
-    Partial<UseDeleteManyMutateParams<RecordType>>
-> & { mutationMode?: MutationMode; returnPromise?: TReturnPromise };
+> = Omit<
+    UseMutationOptions<
+        Array<RecordType['id']> | undefined,
+        MutationError,
+        Partial<UseDeleteManyMutateParams<RecordType>>
+    >,
+    'mutationFn'
+> & {
+    mutationFn?: (
+        params: Partial<UseDeleteManyMutateParams<RecordType>>
+    ) => Promise<Array<RecordType['id']> | undefined>;
+    mutationMode?: MutationMode;
+    returnPromise?: TReturnPromise;
+};
 
 export type UseDeleteManyResult<
     RecordType extends RaRecord = any,
