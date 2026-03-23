@@ -82,6 +82,63 @@ describe('useCreate', () => {
         });
     });
 
+    it('uses a custom mutationFn with mutation middlewares', async () => {
+        const dataProvider = testDataProvider({
+            create: jest.fn(() => Promise.resolve({ data: { id: 1 } } as any)),
+        });
+        const customMutationFn = jest.fn(async params => ({
+            id: 1,
+            title: params.data?.title,
+            middlewareApplied: params.data?.middlewareApplied,
+        }));
+        let localCreate;
+        let mutationData;
+        const Dummy = () => {
+            const [create, { data }] = useCreate(undefined, undefined, {
+                mutationFn: customMutationFn,
+                getMutateWithMiddlewares: mutate => async (resource, params) =>
+                    mutate(resource, {
+                        ...params,
+                        data: {
+                            ...params.data,
+                            middlewareApplied: true,
+                        },
+                    }),
+            });
+            localCreate = create;
+            mutationData = data;
+            return <span />;
+        };
+
+        render(
+            <CoreAdminContext dataProvider={dataProvider}>
+                <Dummy />
+            </CoreAdminContext>
+        );
+
+        localCreate('foo', { data: { title: 'Hello' } });
+
+        await waitFor(() => {
+            expect(customMutationFn).toHaveBeenCalledWith({
+                resource: 'foo',
+                data: {
+                    title: 'Hello',
+                    middlewareApplied: true,
+                },
+            });
+        });
+
+        expect(dataProvider.create).not.toHaveBeenCalled();
+
+        await waitFor(() => {
+            expect(mutationData).toEqual({
+                id: 1,
+                title: 'Hello',
+                middlewareApplied: true,
+            });
+        });
+    });
+
     it('uses the latest declaration time mutationMode', async () => {
         jest.spyOn(console, 'error').mockImplementation(() => {});
         // This story uses the pessimistic mode by default
