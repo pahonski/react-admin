@@ -26,6 +26,7 @@ import {
     Validation,
     Focus,
     Reset,
+    ConditionalArrayInputValidationContent,
 } from './ArrayInput.stories';
 
 describe('<ArrayInput />', () => {
@@ -285,35 +286,11 @@ describe('<ArrayInput />', () => {
     });
 
     it('should not display a root-level array error immediately when mounted in onChange mode', async () => {
-        const submit = jest.fn();
-
-        const FormWithConditionalArrayInput = () => {
-            const [showArrayInput, setShowArrayInput] = React.useState(false);
-
-            return (
-                <>
-                    <button
-                        onClick={() => setShowArrayInput(true)}
-                        type="button"
-                    >
-                        Show array input
-                    </button>
-                    {showArrayInput ? (
-                        <ArrayInput source="authors" validate={required()}>
-                            <SimpleFormIterator>
-                                <TextInput source="name" />
-                            </SimpleFormIterator>
-                        </ArrayInput>
-                    ) : null}
-                </>
-            );
-        };
-
         render(
             <AdminContext dataProvider={testDataProvider()}>
                 <ResourceContextProvider value="books">
-                    <SimpleForm mode="onChange" onSubmit={submit}>
-                        <FormWithConditionalArrayInput />
+                    <SimpleForm mode="onChange" onSubmit={jest.fn()}>
+                        <ConditionalArrayInputValidationContent />
                     </SimpleForm>
                 </ResourceContextProvider>
             </AdminContext>
@@ -321,7 +298,7 @@ describe('<ArrayInput />', () => {
 
         fireEvent.click(screen.getByText('Show array input'));
 
-        await screen.findByText('resources.books.fields.authors');
+        await screen.findByLabelText('ra.action.add');
         expect(screen.queryByText('ra.validation.required')).toBeNull();
 
         fireEvent.click(await screen.findByLabelText('ra.action.add'));

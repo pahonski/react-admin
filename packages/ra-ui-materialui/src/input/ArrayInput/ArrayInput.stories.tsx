@@ -825,43 +825,45 @@ export const GlobalValidation = () => (
     </TestMemoryRouter>
 );
 
-const BookCreateConditionalValidation = () => {
+export const ConditionalArrayInputValidationContent = () => {
     const [showArrayInput, setShowArrayInput] = React.useState(false);
 
     return (
-        <Create>
-            <SimpleForm mode="onChange">
-                <Alert severity="info" sx={{ mb: 2 }}>
-                    Reproduction of bug 2: Displaying the ArrayInput should not
-                    automatically mark it as invalid. The error should appear
-                    only after actual interaction or an invalid submission.
-                </Alert>
-                <Button
-                    onClick={() => setShowArrayInput(true)}
-                    variant="outlined"
-                >
-                    Show array input
-                </Button>
-                {showArrayInput ? (
-                    <ArrayInput
-                        source="authors"
-                        fullWidth
-                        validate={required()}
-                    >
-                        <SimpleFormIterator>
-                            <TextInput source="name" />
-                        </SimpleFormIterator>
-                    </ArrayInput>
-                ) : null}
-            </SimpleForm>
-        </Create>
+        <>
+            <Alert severity="info" sx={{ mb: 2 }}>
+                This story renders a required ArrayInput only after clicking
+                &quot;Show array input&quot;. It should not display a validation
+                error when it first appears. To trigger the array-level
+                validation error, add an item, then remove it. The error should
+                also appear after an invalid submit.
+            </Alert>
+            <Button onClick={() => setShowArrayInput(true)} variant="outlined">
+                Show array input
+            </Button>
+            {showArrayInput ? (
+                <ArrayInput source="authors" fullWidth validate={required()}>
+                    <SimpleFormIterator>
+                        <TextInput source="name" />
+                    </SimpleFormIterator>
+                </ArrayInput>
+            ) : null}
+        </>
     );
 };
 
-export const ConditionalMountOnChangeValidation = () => (
+export const DisplayErrorOnlyAfterInteractionOrInvalidSubmit = () => (
     <TestMemoryRouter initialEntries={['/books/create']}>
         <Admin dataProvider={dataProvider}>
-            <Resource name="books" create={BookCreateConditionalValidation} />
+            <Resource
+                name="books"
+                create={() => (
+                    <Create>
+                        <SimpleForm mode="onChange">
+                            <ConditionalArrayInputValidationContent />
+                        </SimpleForm>
+                    </Create>
+                )}
+            />
         </Admin>
     </TestMemoryRouter>
 );
