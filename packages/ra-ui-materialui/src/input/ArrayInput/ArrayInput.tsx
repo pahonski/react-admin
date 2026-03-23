@@ -7,7 +7,7 @@ import {
     ArrayInputBase,
     type ArrayInputBaseProps,
 } from 'ra-core';
-import { useFormContext, useFormState } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import {
     InputLabel,
     FormControl,
@@ -89,23 +89,25 @@ export const ArrayInput = (inProps: ArrayInputProps) => {
     const parentSourceContext = useSourceContext();
     const finalSource = parentSourceContext.getSource(arraySource);
     const { subscribe } = useFormContext();
-    const { isSubmitted } = useFormState();
-    const [{ error, hasBeenInteractedWith }, setArrayInputState] =
+    const [{ error, hasBeenInteractedWith, isSubmitted }, setArrayInputState] =
         React.useState<{
             error: any;
             hasBeenInteractedWith: boolean;
+            isSubmitted: boolean;
         }>({
             error: undefined,
             hasBeenInteractedWith: false,
+            isSubmitted: false,
         });
     React.useEffect(() => {
         return subscribe({
             formState: {
                 dirtyFields: true,
                 errors: true,
+                isSubmitted: true,
                 touchedFields: true,
             },
-            callback: ({ dirtyFields, errors, touchedFields }) => {
+            callback: ({ dirtyFields, errors, isSubmitted, touchedFields }) => {
                 const error = get(errors ?? {}, finalSource);
                 const hasBeenInteractedWith =
                     get(dirtyFields ?? {}, finalSource, false) !== false ||
@@ -115,17 +117,18 @@ export const ArrayInput = (inProps: ArrayInputProps) => {
                     isEqual(previousState, {
                         error,
                         hasBeenInteractedWith,
+                        isSubmitted: !!isSubmitted,
                     })
                         ? previousState
                         : {
                               error,
                               hasBeenInteractedWith,
+                              isSubmitted: !!isSubmitted,
                           }
                 );
             },
         });
     }, [finalSource, subscribe]);
-
     const displayedError =
         hasBeenInteractedWith || isSubmitted ? error : undefined;
     const displayedErrorMessage = (displayedError?.root?.message ??
