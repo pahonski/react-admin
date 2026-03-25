@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { ReactNode } from 'react';
+import { useWatch } from 'react-hook-form';
 import {
     type ComponentsOverrides,
     styled,
@@ -63,7 +64,10 @@ export const SimpleFormIterator = (inProps: SimpleFormIteratorProps) => {
     }
     const { fields } = useArrayInput(props);
     const record = useRecordContext(props);
-    const records = get(record, finalSource);
+    const records =
+        useWatch({
+            name: finalSource,
+        }) ?? get(record, finalSource);
     const getArrayInputNewItemDefaults =
         useGetArrayInputNewItemDefaults(fields);
 
