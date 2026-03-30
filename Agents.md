@@ -81,6 +81,6 @@ Every new feature or API change must be documented.
 
 ```bash
 make lint               # ESLint checks
+make typecheck          # TypeScript type checking
 make prettier           # Prettier formatting
-make build              # TypeScript type checking
 ```
