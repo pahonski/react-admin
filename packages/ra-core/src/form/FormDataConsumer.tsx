@@ -86,10 +86,7 @@ export const FormDataConsumerView = <
 };
 
 const getArraySource = (source: string) =>
-    source &&
-    source.includes('.') &&
-    ArraySourceRegex.test(source) &&
-    source.lastIndexOf('.') > 0
+    source.lastIndexOf('.') > 0 && ArraySourceRegex.test(source)
         ? source
         : undefined;
 
