@@ -255,7 +255,7 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
     };
 };
 
-const getResourceCollection = (data, resource) => {
+const getResourceCollection = (data: Record<string, any>, resource: string) => {
     if (!Object.prototype.hasOwnProperty.call(data, resource)) {
         throw new Error(`Unknown resource key: ${resource}`);
     }
@@ -263,7 +263,10 @@ const getResourceCollection = (data, resource) => {
     return data[resource];
 };
 
-const getOrCreateResourceCollection = (data, resource) => {
+const getOrCreateResourceCollection = (
+    data: Record<string, any>,
+    resource: string
+) => {
     if (!Object.prototype.hasOwnProperty.call(data, resource)) {
         data[resource] = [];
     }
@@ -271,7 +274,7 @@ const getOrCreateResourceCollection = (data, resource) => {
     return data[resource];
 };
 
-const checkResource = resource => {
+const checkResource = (resource: string) => {
     // Reject "__proto__" so dynamic writes like data[resource] = value don't
     // mutate Object.prototype instead of creating a normal resource collection.
     if (resource === '__proto__') {
@@ -279,7 +282,7 @@ const checkResource = resource => {
     }
 };
 
-const assertRecordsExist = (resourceData, ids) => {
+const assertRecordsExist = (resourceData: any[], ids: any[]) => {
     ids.forEach(id => {
         if (resourceData.findIndex(record => record.id == id) === -1) {
             throw new Error(`No item with identifier ${id}`);
