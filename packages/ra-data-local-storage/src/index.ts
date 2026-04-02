@@ -99,10 +99,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         // update methods need to persist changes in localStorage
         update: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
+            const resourceData = getResourceCollection(data, resource);
             try {
-                assertRecordsExist(getResourceCollection(data, resource), [
-                    params.id,
-                ]);
+                assertRecordsExist(resourceData, [params.id]);
             } catch (error) {
                 return Promise.reject(error);
             }
@@ -110,18 +109,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .update<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
-
-                        if (index === -1) {
-                            return;
-                        }
-
                         resourceData.splice(index, 1, {
                             ...resourceData[index],
                             ...params.data,
@@ -133,11 +123,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         },
         updateMany: (resource, params) => {
             checkResource(resource);
+            const resourceData = getResourceCollection(data, resource);
             try {
-                assertRecordsExist(
-                    getResourceCollection(data, resource),
-                    params.ids
-                );
+                assertRecordsExist(resourceData, params.ids);
             } catch (error) {
                 return Promise.reject(error);
             }
@@ -146,19 +134,10 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .updateMany(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
                         params.ids.forEach(id => {
                             const index = resourceData.findIndex(
                                 record => record.id == id
                             );
-
-                            if (index === -1) {
-                                return;
-                            }
-
                             resourceData.splice(index, 1, {
                                 ...resourceData[index],
                                 ...params.data,
@@ -190,10 +169,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         },
         delete: <RecordType extends RaRecord = any>(resource, params) => {
             checkResource(resource);
+            const resourceData = getResourceCollection(data, resource);
             try {
-                assertRecordsExist(getResourceCollection(data, resource), [
-                    params.id,
-                ]);
+                assertRecordsExist(resourceData, [params.id]);
             } catch (error) {
                 return Promise.reject(error);
             }
@@ -201,18 +179,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .delete<RecordType>(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
-                        );
                         const index = resourceData.findIndex(
                             record => record.id == params.id
                         );
-
-                        if (index === -1) {
-                            return;
-                        }
-
                         pullAt(resourceData, [index]);
                     });
 
@@ -221,11 +190,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
         },
         deleteMany: (resource, params) => {
             checkResource(resource);
+            const resourceData = getResourceCollection(data, resource);
             try {
-                assertRecordsExist(
-                    getResourceCollection(data, resource),
-                    params.ids
-                );
+                assertRecordsExist(resourceData, params.ids);
             } catch (error) {
                 return Promise.reject(error);
             }
@@ -234,18 +201,9 @@ export default (params?: LocalStorageDataProviderParams): DataProvider => {
                 .deleteMany(resource, params)
                 .then(response => {
                     updateLocalStorage(() => {
-                        const resourceData = getResourceCollection(
-                            data,
-                            resource
+                        const indexes = params.ids.map(id =>
+                            resourceData.findIndex(record => record.id == id)
                         );
-                        const indexes = params.ids
-                            .map(id =>
-                                resourceData.findIndex(
-                                    record => record.id == id
-                                )
-                            )
-                            .filter(index => index !== -1);
-
                         pullAt(resourceData, indexes);
                     });
 
@@ -277,7 +235,7 @@ const getOrCreateResourceCollection = (
 const checkResource = (resource: string) => {
     // Reject "__proto__" so dynamic writes like data[resource] = value don't
     // mutate Object.prototype instead of creating a normal resource collection.
-    if (resource === '__proto__') {
+    if (['__proto__', 'constructor', 'prototype'].includes(resource)) {
         throw new Error(`Invalid resource key: ${resource}`);
     }
 };
