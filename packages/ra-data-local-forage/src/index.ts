@@ -175,21 +175,15 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                 throw new Error('The dataProvider is not initialized.');
             }
 
-            const resourceData = getResourceCollection(data, resource);
-            assertRecordsExist(resourceData, [params.id]);
-            const response = await baseDataProvider.update<RecordType>(
-                resource,
-                params
-            );
-            const index = resourceData.findIndex(
+            const index = data[resource].findIndex(
                 (record: { id: any }) => record.id === params.id
             );
-            resourceData.splice(index, 1, {
-                ...resourceData[index],
+            data[resource][index] = {
+                ...data[resource][index],
                 ...params.data,
-            });
+            };
             updateLocalForage(resource);
-            return response;
+            return baseDataProvider.update<RecordType>(resource, params);
         },
         updateMany: async (resource: string, params: UpdateManyParams<any>) => {
             checkResource(resource);
@@ -197,28 +191,21 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!baseDataProvider) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            if (!data) {
-                throw new Error('The dataProvider is not initialized.');
-            }
-
-            const resourceData = getResourceCollection(data, resource);
-            assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.updateMany(
-                resource,
-                params
-            );
 
             params.ids.forEach((id: Identifier) => {
-                const index = resourceData.findIndex(
+                if (!data) {
+                    throw new Error('The dataProvider is not initialized.');
+                }
+                const index = data[resource].findIndex(
                     (record: { id: Identifier }) => record.id === id
                 );
-                resourceData.splice(index, 1, {
-                    ...resourceData[index],
+                data[resource][index] = {
+                    ...data[resource][index],
                     ...params.data,
-                });
+                };
             });
             updateLocalForage(resource);
-            return response;
+            return baseDataProvider.updateMany(resource, params);
         },
         create: async <RecordType extends Omit<RaRecord, 'id'> = any>(
             resource: string,
@@ -236,11 +223,10 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
                     if (!data) {
                         throw new Error('The dataProvider is not initialized.');
                     }
-                    const resourceData = getOrCreateResourceCollection(
-                        data,
-                        resource
-                    );
-                    resourceData.push(response.data);
+                    if (!data.hasOwnProperty(resource)) {
+                        data[resource] = [];
+                    }
+                    data[resource].push(response.data);
                     updateLocalForage(resource);
                     return response;
                 });
@@ -257,18 +243,12 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            const resourceData = getResourceCollection(data, resource);
-            assertRecordsExist(resourceData, [params.id]);
-            const response = await baseDataProvider.delete<RecordType>(
-                resource,
-                params
-            );
-            const index = resourceData.findIndex(
+            const index = data[resource].findIndex(
                 (record: { id: any }) => record.id === params.id
             );
-            pullAt(resourceData, [index]);
+            pullAt(data[resource], [index]);
             updateLocalForage(resource);
-            return response;
+            return baseDataProvider.delete<RecordType>(resource, params);
         },
         deleteMany: async (resource: string, params: DeleteManyParams<any>) => {
             checkResource(resource);
@@ -279,62 +259,26 @@ export default (params?: LocalForageDataProviderParams): DataProvider => {
             if (!data) {
                 throw new Error('The dataProvider is not initialized.');
             }
-            const resourceData = getResourceCollection(data, resource);
-            assertRecordsExist(resourceData, params.ids);
-            const response = await baseDataProvider.deleteMany(
-                resource,
-                params
-            );
             const indexes = params.ids.map((id: any) => {
-                return resourceData.findIndex(
+                if (!data) {
+                    throw new Error('The dataProvider is not initialized.');
+                }
+                return data[resource].findIndex(
                     (record: any) => record.id === id
                 );
             });
-
-            pullAt(resourceData, indexes);
+            pullAt(data[resource], indexes);
             updateLocalForage(resource);
-            return response;
+            return baseDataProvider.deleteMany(resource, params);
         },
     };
 };
 
-const getResourceCollection = (data: Record<string, any>, resource: string) => {
-    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
-        throw new Error(`Unknown resource key: ${resource}`);
-    }
-
-    return data[resource];
-};
-
-const getOrCreateResourceCollection = (
-    data: Record<string, any>,
-    resource: string
-) => {
-    if (!Object.prototype.hasOwnProperty.call(data, resource)) {
-        data[resource] = [];
-    }
-
-    return data[resource];
-};
-
 const checkResource = resource => {
-    // Reject "__proto__" so dynamic writes like data[resource] = value don't
-    // mutate Object.prototype instead of creating a normal resource collection.
     if (['__proto__', 'constructor', 'prototype'].includes(resource)) {
+        // protection against prototype pollution
         throw new Error(`Invalid resource key: ${resource}`);
     }
-};
-
-const assertRecordsExist = (resourceData, ids) => {
-    ids.forEach(id => {
-        if (
-            resourceData.findIndex(
-                (record: { id: Identifier }) => record.id === id
-            ) === -1
-        ) {
-            throw new Error(`No item with identifier ${id}`);
-        }
-    });
 };
 
 export interface LocalForageDataProviderParams {
